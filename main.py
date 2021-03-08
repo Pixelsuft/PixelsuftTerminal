@@ -9,6 +9,7 @@ from time import sleep as time_sleep
 from random import randint as random_int
 from parse_args import get_arguments as get_args
 from parse_args import set_arguments as set_args
+from threading import Thread as NewThread
 from subprocess import check_output as cmd_run_log
 from subprocess import CalledProcessError as ExitCodeException
 from subprocess import STDOUT as stdout
@@ -34,6 +35,7 @@ class PixelsuftTerminalWidget(Widget):
         self.shift = False
         self.back_commands = ['']
         self.history = []
+        self.jumping = 0
         self.current_command = ''
         self.cursor_count = -30
         self.encoding = 'utf-8'
@@ -169,7 +171,7 @@ class PixelsuftTerminalWidget(Widget):
         if self.keyboard_opened:
             t = 200
         i = len(self.history)
-        while t < self.height and i > 0:
+        while t < self.height + self.jumping and i > 0:
             i -= 1
             temp_text = self.history[i][1]
             if temp_text:
@@ -179,7 +181,7 @@ class PixelsuftTerminalWidget(Widget):
                     Color(0, 1, 0, 1)
                     Rectangle(
                         texture=this_dir_text.texture,
-                        pos=(0, t),
+                        pos=(0, t + self.jumping),
                         size=(15 * len(j) / 2.5, 15 * 1.2)
                     )
                     t += 15
@@ -189,7 +191,7 @@ class PixelsuftTerminalWidget(Widget):
             Color(0, 1, 0, 1)
             Rectangle(
                 texture=this_dir_text.texture,
-                pos=(0, t),
+                pos=(0, t + self.jumping),
                 size=(15 * len(temp_text_run) / 2.5, 15 * 1.2)
             )
             t += 15
@@ -238,6 +240,9 @@ class PixelsuftTerminalWidget(Widget):
                 result = e.output + '\nProcess finished with error code.'
         elif cmd == 'eval':
             result = eval(launch_string[5:])
+        elif cmd == 'cursor':
+            if len(args) > 0:
+                self.cursor = args[0]
         elif cmd == 'cls' or cmd == 'clear':
             self.history.clear()
             can_add_result = False
@@ -324,9 +329,9 @@ class PixelsuftTerminalWidget(Widget):
     def main_loop(self, sec):
         self.canvas.clear()
         with self.canvas:
+            self.draw_result()
             self.draw_current_path()
             self.draw_input()
-            self.draw_result()
             Color(1, 1, 1, 1)
             if self.keyboard_opened:
                 self.draw_keyboard()
@@ -366,8 +371,15 @@ class PixelsuftTerminalWidget(Widget):
                                     pass
                             self.button_pressed.append(i[0])
                     can_pass = False
-            if not can_pass:
-                return None
+        if can_pass:
+            a = self.height
+            if self.keyboard_opened:
+                a -= 150
+            if norm_y < a / 2:
+                if self.jumping >= 0:
+                    self.jumping -= 5 * 15
+            else:
+                self.jumping += 5 * 15
 
     def on_touch_up(self, touch):
         norm_y = self.get_height(touch.y)
