@@ -175,7 +175,7 @@ class PixelsuftTerminalWidget(Widget):
             i -= 1
             temp_text = self.history[i][1]
             if temp_text:
-                for j in temp_text.split('\n'):
+                for j in temp_text.split('\n')[::-1]:
                     this_dir_text = CoreLabel(text=j, font_size=15)
                     this_dir_text.refresh()
                     Color(0, 1, 0, 1)
@@ -217,6 +217,16 @@ class PixelsuftTerminalWidget(Widget):
         elif cmd == 'encoding':
             if len(args) > 0:
                 self.encoding = args[0]
+        elif cmd == 'cat':
+            for i in args:
+                try:
+                    temp_f = open(i, 'r')
+                    if result:
+                        result += '\n'
+                    result += temp_f.read()
+                    temp_f.close()
+                except:
+                    print(f'Error while opening {i} file!')
         elif cmd == 'dir' or cmd == 'ls' or cmd == 'listdir':
             path_to_scan = get_current_dir()
             if len(args) > 0:
@@ -376,8 +386,7 @@ class PixelsuftTerminalWidget(Widget):
             if self.keyboard_opened:
                 a -= 150
             if norm_y < a / 2:
-                if self.jumping >= 0:
-                    self.jumping -= 5 * 15
+                self.jumping -= 5 * 15
             else:
                 self.jumping += 5 * 15
 
